@@ -1,40 +1,48 @@
 import numpy as np
 
 
-def colorize(iteration_counts, max_iterations):
+# HSV->RGB helper removed: using discrete RGB palette mapping below (no interpolation).
 
-    # Normalisér iterationstællinger til 0..1 og undgå division med nul.
-    safe_max_iterations = max(1, int(max_iterations))
-    normalized_iterations = iteration_counts.astype(np.float32) / safe_max_iterations
 
-    # Fast palette med farvestop.
-    color_stops = np.array([
-        [66, 30, 15],    # dark brown
-        [25, 7, 26],     # violet
-        [57, 125, 209],  # blue
-        [134, 181, 229], # light blue
-        [248, 201, 95],  # yellow-orange
-        [255, 170, 0],   # orange
-    ], dtype=np.float32)
+def colorize(iteration_counts, max_iterations, gamma=0.6, palette=None):
+    # Default discrete palette (clear, non-interpolated colors)
+    if palette is None:
+        # Gradual progression from very dark navy -> lighter warm pale (10 steps)
+        palette = np.array([
+            [4, 8, 16],     # near-black navy
+            [8, 24, 48],    # very dark navy
+            [16, 48, 96],   # deep blue
+            [32, 74, 120],  # steel/indigo
+            [56, 100, 140], # desaturated blue
+            [88, 130, 150], # muted teal
+            [120, 160, 150],# soft green-teal
+            [150, 185, 145],# pale greenish
+            [185, 205, 165],# warm pale
+            [220, 230, 200],# very light warm
+        ], dtype=np.uint8)
 
-    number_of_color_stops = color_stops.shape[0]
+    palette = np.asarray(palette, dtype=np.uint8)
+    palette_len = palette.shape[0]
 
-    # Position i farvestop-rummet, fra 0 til number_of_color_stops - 1.
-    palette_position = normalized_iterations * (number_of_color_stops - 1)
-    lower_stop_index = np.floor(palette_position).astype(np.int32)
-    blend_fraction = palette_position - lower_stop_index
+    max_iter_safe = max(1, int(max_iterations))
+    normalized = iteration_counts.astype(np.float32) / max_iter_safe
 
-    # Begræns indeks, så vi ikke overskrider arrayets grænser.
-    lower_stop_index = np.clip(lower_stop_index, 0, number_of_color_stops - 2)
-    upper_stop_index = lower_stop_index + 1
+    # Mask for points inside the Mandelbrot set (kept black)
+    inside_mask = iteration_counts == max_iterations
 
-    # Hent stopfarver og interpolér.
-    lower_stop_color = color_stops[lower_stop_index]
-    upper_stop_color = color_stops[upper_stop_index]
-    color_image = lower_stop_color * (1.0 - blend_fraction)[..., None] + upper_stop_color * blend_fraction[..., None]
+    # Gamma styrer, hvor hurtigt farverne skifter gennem paletten:
+    # lav gamma = hurtigere skift tæt på Mandelbrot-mængden, høj gamma = langsommere skift i starten.
+    scaled = np.power(normalized, gamma)
 
-    # Sæt indre punkter til sort.
-    mask_inside = iteration_counts == max_iterations
-    color_image[mask_inside] = 0
+    # Compute palette indices using floor -> discrete bands (no interpolation)
+    indices = np.floor(scaled * palette_len).astype(np.int32)
+    # Clamp indices so high normalized values map to the last palette entry
+    indices = np.clip(indices, 0, palette_len - 1)
 
-    return np.clip(color_image, 0, 255).astype(np.uint8)
+    # Map indices to RGB colors (vectorized indexing)
+    rgb_pixels = palette[indices]
+
+    # Set interior points to black
+    rgb_pixels[inside_mask] = 0
+
+    return rgb_pixels

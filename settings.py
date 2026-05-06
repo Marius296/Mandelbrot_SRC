@@ -7,5 +7,5 @@ initial_zoom_center_x = -0.743643887037151
 initial_zoom_center_y = 0.131825904205330
 initial_zoom_level = 1.0
 max_zoom_level = 1000000.0
-zoom_multiplier = 1.08
+zoom_multiplier = 1.02
 pan_speed_pixels = 500.0
