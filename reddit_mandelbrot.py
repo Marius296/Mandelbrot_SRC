@@ -48,7 +48,7 @@ def main():
                 running = False
 
         N = mandelbrot_numba(center_x, center_y, zoom, MAX_ITER, WIDTH, HEIGHT)
-        arr = np.rot90(colorize(N))   # rotate for pygame
+        arr = np.rot90(colorize(N))   # Drejer billedet, så pygame viser det korrekt.
         surf = pygame.surfarray.make_surface(arr)
         screen.blit(surf, (0, 0))
         pygame.display.flip()
