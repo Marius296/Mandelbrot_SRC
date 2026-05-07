@@ -19,6 +19,7 @@ def colorize(iteration_counts, max_iterations, gamma=0.6, palette=None):
     palette = np.asarray(palette, dtype=np.uint8)
     palette_len = palette.shape[0]
 
+    # sørger for at der ikke kan divideres med 0 
     max_iter_safe = max(1, int(max_iterations))
     normalized = iteration_counts.astype(np.float32) / max_iter_safe
 
@@ -29,12 +30,10 @@ def colorize(iteration_counts, max_iterations, gamma=0.6, palette=None):
     # Lav gamma giver hurtigere skift tæt på mængden; høj gamma giver en langsommere start.
     scaled = np.power(normalized, gamma)
 
-    # Beregner paletindeks med gulvfunktion, så farverne bliver i tydelige bånd.
     indices = np.floor(scaled * palette_len).astype(np.int32)
     # Begrænser indekserne, så høje værdier bruger den sidste farve i paletten.
     indices = np.clip(indices, 0, palette_len - 1)
 
-    # Slår indekserne op som RGB-farver.
     rgb_pixels = palette[indices]
 
     # Gør punkter inde i mængden sorte.
